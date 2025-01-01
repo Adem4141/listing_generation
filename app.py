@@ -8,16 +8,6 @@ from listing_graph import listing_graph, parent_config
 
 st.set_page_config(layout="wide")
 
-
-# inp = {"words":["mama sweatshrt"],
-# "listing_count":2,
-# "character_limit":125,
-# "specified_criterias": "None",
-# "undesired_words":"None",
-# "desired_words":"mom",
-# "product_name":"embroidered sweatshirt"}
-
-
 st.markdown(
     """
     <style>
@@ -84,7 +74,6 @@ if uploaded_file is not None:
 
 
 if st.button("generate") and openai_api_key != "":
-    # Tüm gerekli girdilerin sağlandığını kontrol edin
     print("controlll")
     if uploaded_file and desired_words and undesired_words and title_chracter_limit and product_name and openai_api_key:
 
@@ -105,6 +94,9 @@ if st.button("generate") and openai_api_key != "":
 
         chunk_size = 6
         chunks = [listing["desc_list"][i:i + chunk_size] for i in range(0, len(listing), chunk_size)]
+        print("lennn", len(chunks))
+        print(chunks)
+
         df_list = []
         for i in range(listing_count):
             df_list.append(pd.DataFrame([listing["title_list"][i].content] + [a.content for a in chunks[i]]).T)
@@ -128,16 +120,10 @@ if st.button("generate") and openai_api_key != "":
         if 'df' not in st.session_state:
             st.session_state.df = final_df
 
-        # df = st.session_state.df
-        # fig = st.session_state.fig
-
         left_column, right_column = st.columns([3, 3])
         with left_column:
-            # st.header("Generated Listings")
-            # st.dataframe(final_df)
             st.dataframe(final_df, width=2000)
 
-            # Excel indirme butonu
             st.download_button(
                 label="Download Excel",
                 data=convert_df_to_excel(final_df),
@@ -149,10 +135,6 @@ if st.button("generate") and openai_api_key != "":
             st.header("Graphs")
             fig = plot_bar(["title: " + str(i) for i in range(1, len(title_scores) + 1)], list(title_scores.values()))
             st.plotly_chart(fig, use_container_width=True)
-            # fig = plot_bar(df["A"].tolist(), df["B"].tolist())
-            # st.plotly_chart(fig, use_container_width=True)
-
-        # st.success("Processing complete!")
     else:
         st.error("Please fill in all fields before submitting.")
 
@@ -161,18 +143,6 @@ if st.button("generate") and openai_api_key != "":
 
 elif openai_api_key == "":
     st.info("Please enter verified open ai api key")
-
-
-
-# import numpy as np
-# data = {
-#     'A': np.random.randint(1, 100, 20),
-#     'B': np.random.randint(1, 100, 20),
-#     'C': np.random.randint(1, 100, 20),
-#     'D': np.random.randint(1, 100, 20),
-#     'E': np.random.randint(1, 100, 20)
-# }
-
 
 
 

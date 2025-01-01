@@ -1,29 +1,14 @@
 from langgraph.graph import END, StateGraph, START
-
 from langchain.pydantic_v1 import BaseModel, Field
-
 from langchain_core.messages import BaseMessage
-
-
-from typing import List
-
-from typing import Dict
-
-from langchain_openai import ChatOpenAI
-
+from typing import List, Dict
 from langgraph.checkpoint.memory import MemorySaver
-
 from langchain_core.messages import  AIMessage
-
 from langchain_core.prompts import PromptTemplate
-
-parent_config = {"configurable": {"thread_id": "4"}}
-
 from langgraph.graph.message import add_messages
 from typing import Annotated, Literal, Sequence, TypedDict
-from langchain_openai import ChatOpenAI
 
-
+parent_config = {"configurable": {"thread_id": "4"}}
 class State(TypedDict):
     llm: str
     words:List[str]
@@ -277,7 +262,6 @@ def decision_maker(state):
                                                      specified_criterias_rew=specified_criterias_rew, desired_words_rew=desired_words_rew,
                                                      undesired_words_rew=undesired_words_rew)
     
-    #llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
     llm = state["llm"]
     structured_llm_router = llm.with_structured_output(decision)
 
@@ -295,7 +279,6 @@ def ss(state):
 subgraph = StateGraph(State)
 subgraph.add_node("title_generator",title_generator)
 subgraph.add_node("title_review",title_review)
-# subgraph.add_node("decision_maker",decision_maker)
 subgraph.add_node("ss",ss)
 
 
@@ -312,10 +295,6 @@ subgraph.add_edge("ss", END)
 memory = MemorySaver()
 
 graph = subgraph.compile(checkpointer=memory)
-
-
-
-
 
 def_desc = """
         Bullet points
@@ -375,9 +354,6 @@ def get_prompt(title, old_desc):
     return promt
 
 def description_generator(title, desc, llm):
-
-
-        #llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
         promt = get_prompt(title, desc)
 
         response = llm.invoke(promt)
@@ -452,7 +428,6 @@ def control(state):
     if len(state["title_list"]) == state["listing_count"]:
         return "break"
     else:
-        #state["listing_count"] = state["listing_count"] +1
         return "continue"
 
 def dummy(state):
@@ -461,15 +436,9 @@ def dummy(state):
 parent_graph = StateGraph(ParentState)
 parent_graph.add_node("title_generation", parent_title_node)
 parent_graph.add_node("description_generation", parent_desc_node)
-# parent_graph.add_node("control", control)
 parent_graph.add_node("dummy", dummy)
-
-
 parent_graph.add_edge(START, "title_generation")
 parent_graph.add_edge("title_generation", "description_generation")
-
-# parent_graph.add_edge("description_generation", "control")
-
 parent_graph.add_conditional_edges(
     "description_generation",
     control,
