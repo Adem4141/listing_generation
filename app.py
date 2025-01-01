@@ -1,72 +1,12 @@
-from langgraph.prebuilt import create_react_agent
 
-from langchain_core.messages import BaseMessage
-from langchain_openai.chat_models import ChatOpenAI
-from typing import List
-
-from langgraph.prebuilt.chat_agent_executor import AgentState
-from langchain_core.documents import Document
-
-
-from typing import List, Optional
-from langchain.output_parsers.openai_functions import JsonOutputFunctionsParser
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_openai import ChatOpenAI
-
-from langgraph.graph import END, StateGraph, START
-from langchain_core.messages import HumanMessage, trim_messages
-
-import functools
-
-from langchain.pydantic_v1 import BaseModel, Field
-from langchain_core.runnables import RunnablePassthrough
-
-from typing import Literal
-    
-import operator
-
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
-from langchain_openai.chat_models import ChatOpenAI
-
-
-from typing import Annotated, List, Dict
-from langchain_core.tools import tool
-
-
-from pathlib import Path
-from tempfile import TemporaryDirectory
-from typing import Dict, Optional
-
-# from langchain_experimental.utilities import PythonREPL
-from typing_extensions import TypedDict
-
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-
-import os
-from langgraph.checkpoint.memory import MemorySaver
-
-from langchain_core.messages import HumanMessage, trim_messages, AIMessage
-
-from langchain_core.tools import tool
-from langchain_core.prompts import PromptTemplate
-
-from langchain.vectorstores import Chroma
 import plotly.graph_objects as go
-
-openai_api_key="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"
-
-open_ai_small_path = "C:/Users/HP/Desktop/streamlit_trial/deneme_files/chroma/"
-embed_model = OpenAIEmbeddings(openai_api_key="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", model="text-embedding-3-small")   
-
-
 import streamlit as st
 import pandas as pd
-
-
-from langgraph.graph.message import add_messages
-from typing import Annotated, Literal, Sequence, TypedDict
-
+from langchain_openai import ChatOpenAI
+from io import BytesIO
 from listing_graph import listing_graph, parent_config
+
+st.set_page_config(layout="wide")
 
 
 # inp = {"words":["mama sweatshrt"],
@@ -76,7 +16,6 @@ from listing_graph import listing_graph, parent_config
 # "undesired_words":"None",
 # "desired_words":"mom",
 # "product_name":"embroidered sweatshirt"}
-st.set_page_config(layout="wide")
 
 
 st.markdown(
@@ -95,41 +34,6 @@ st.markdown(
 )
 
 st.title("Amazon Listing Generator")
-
-# options = ["Default"]
-
-# options_ = st.sidebar.selectbox("please select a listing strategy:", options)
-uploaded_file = st.sidebar.file_uploader("upload your hellium 10 keyword excel file", type=["xlsx", "xls"])
-product_name = st.sidebar.text_input("please enter your product name",value="embroidered sweatshirt")
-title_chracter_limit = st.sidebar.number_input("please enter the title character limit",value=125)
-listing_count = st.sidebar.number_input("please enter desired listing count", value=3)
-desired_words = st.sidebar.text_input("please enter your comma seperated specificly desired words", value="mom")
-undesired_words = st.sidebar.text_input("please enter your comma seperated specificly undesired words", value="cozy")
-
-# listing_count = 1
-
-if uploaded_file is not None:
-    try:
-        kws = pd.read_excel(uploaded_file)
-        # st.success("Dosya başarıyla yüklendi!")
-        
-        # DataFrame'i göster
-        # st.dataframe(df)
-    except Exception as e:
-        st.error(f"Dosya okunurken bir hata oluştu: {e}")
-
-# else:
-#     st.info("Lütfen bir Excel dosyası yükleyin.")
-# import numpy as np
-# data = {
-#     'A': np.random.randint(1, 100, 20),
-#     'B': np.random.randint(1, 100, 20),
-#     'C': np.random.randint(1, 100, 20),
-#     'D': np.random.randint(1, 100, 20),
-#     'E': np.random.randint(1, 100, 20)
-# }
-
-from io import BytesIO
 
 # @st.cache_data
 def load_data():
@@ -157,34 +61,47 @@ def plot_bar(x,y):
     fig.update_layout(width=600, height=400)
     return fig
 
+openai_api_key = st.sidebar.text_input("please enter your open ai api key")
+uploaded_file = st.sidebar.file_uploader("upload your hellium 10 keyword excel file", type=["xlsx", "xls"])
+product_name = st.sidebar.text_input("please enter your product name",value="embroidered sweatshirt")
+title_chracter_limit = st.sidebar.number_input("please enter the title character limit",value=125)
+listing_count = st.sidebar.number_input("please enter desired listing count", value=3)
+desired_words = st.sidebar.text_input("please enter your comma seperated specificly desired words", value="mom")
+undesired_words = st.sidebar.text_input("please enter your comma seperated specificly undesired words", value="cozy")
+
+if "openai_api_key" not in st.session_state:
+    st.session_state["openai_api_key"] = openai_api_key
+
+#openai_api_key = st.session_state["openai_api_key"]
+print("openai_api_key: ", openai_api_key)
+
+if uploaded_file is not None:
+    try:
+        kws = pd.read_excel(uploaded_file)
+    except Exception as e:
+        st.error(f"Dosya okunurken bir hata oluştu: {e}")
 
 
 
-if st.button("generate"):
+if st.button("generate") and openai_api_key != "":
     # Tüm gerekli girdilerin sağlandığını kontrol edin
-    if uploaded_file and desired_words and undesired_words and title_chracter_limit and product_name:
-        # if 'df' not in st.session_state:
-        #     st.session_state.df = load_data()
-            
-            # st.write(st.session_state.df)
-        # df = st.session_state.df
+    print("controlll")
+    if uploaded_file and desired_words and undesired_words and title_chracter_limit and product_name and openai_api_key:
 
-        # if 'fig' not in st.session_state:
-        #     df = st.session_state.df
-        #     st.session_state.fig = plot_bar(df["A"].tolist(), df["B"].tolist())
-        words = kws.sort_values("Search Volume",ascending=False)["Keyword Phrase"].tolist()[:10]
-        sv_scores = {i:j for i,j in kws[["Keyword Phrase","Search Volume"]].values}
+        llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
+        words = kws.sort_values("Search Volume", ascending=False)["Keyword Phrase"].tolist()[:10]
+        sv_scores = {i: j for i, j in kws[["Keyword Phrase", "Search Volume"]].values}
 
-        inp = {"words":words,
-        "listing_count":listing_count,
-        "character_limit":title_chracter_limit,
-        "specified_criterias": "None",
-        "undesired_words":undesired_words,
-        "desired_words":desired_words,
-        "product_name":product_name}
-            
+        inp = {"llm":llm,
+                "words": words,
+               "listing_count": listing_count,
+               "character_limit": title_chracter_limit,
+               "specified_criterias": "None",
+               "undesired_words": undesired_words,
+               "desired_words": desired_words,
+               "product_name": product_name}
+
         listing = listing_graph.invoke({**inp}, config=parent_config)
-
 
         chunk_size = 6
         chunks = [listing["desc_list"][i:i + chunk_size] for i in range(0, len(listing), chunk_size)]
@@ -194,8 +111,7 @@ if st.button("generate"):
 
         final_df = pd.concat(df_list)
 
-        final_df.columns = ["title"] + ["Bullet" + str(i) for i in range(1,6)] + ["Description"]
-
+        final_df.columns = ["title"] + ["Bullet" + str(i) for i in range(1, 6)] + ["Description"]
 
         title_scores = {}
         for title in [i.lower() for i in final_df["title"].tolist()]:
@@ -203,14 +119,15 @@ if st.button("generate"):
                 if title not in title_scores.keys() and word in title:
                     title_scores[title] = score
                     continue
-                if  word in title:
+                if word in title:
                     title_scores[title] += score
 
         if 'fig' not in st.session_state:
-            st.session_state.fig = plot_bar(["title: " + str(i) for i in range(1, len(title_scores)+1)], list(title_scores.values()))
+            st.session_state.fig = plot_bar(["title: " + str(i) for i in range(1, len(title_scores) + 1)],
+                                            list(title_scores.values()))
         if 'df' not in st.session_state:
             st.session_state.df = final_df
-            
+
         # df = st.session_state.df
         # fig = st.session_state.fig
 
@@ -228,18 +145,41 @@ if st.button("generate"):
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
 
-
         with right_column:
             st.header("Graphs")
-            fig = plot_bar(["title: " + str(i) for i in range(1,len(title_scores)+1)], list(title_scores.values()))
+            fig = plot_bar(["title: " + str(i) for i in range(1, len(title_scores) + 1)], list(title_scores.values()))
             st.plotly_chart(fig, use_container_width=True)
             # fig = plot_bar(df["A"].tolist(), df["B"].tolist())
             # st.plotly_chart(fig, use_container_width=True)
-        
 
         # st.success("Processing complete!")
     else:
         st.error("Please fill in all fields before submitting.")
+
+
+
+
+elif openai_api_key == "":
+    st.info("Please enter verified open ai api key")
+
+
+
+# import numpy as np
+# data = {
+#     'A': np.random.randint(1, 100, 20),
+#     'B': np.random.randint(1, 100, 20),
+#     'C': np.random.randint(1, 100, 20),
+#     'D': np.random.randint(1, 100, 20),
+#     'E': np.random.randint(1, 100, 20)
+# }
+
+
+
+
+
+
+
+
 
 
 

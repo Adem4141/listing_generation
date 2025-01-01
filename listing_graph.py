@@ -9,7 +9,7 @@ from typing import List
 
 from typing import Dict
 
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 
 from langgraph.checkpoint.memory import MemorySaver
 
@@ -17,19 +17,15 @@ from langchain_core.messages import  AIMessage
 
 from langchain_core.prompts import PromptTemplate
 
-
-openai_api_key="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"
-
-open_ai_small_path = "C:/Users/HP/Desktop/streamlit_trial/deneme_files/chroma/"
-embed_model = OpenAIEmbeddings(openai_api_key="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", model="text-embedding-3-small")   
-
 parent_config = {"configurable": {"thread_id": "4"}}
 
 from langgraph.graph.message import add_messages
 from typing import Annotated, Literal, Sequence, TypedDict
+from langchain_openai import ChatOpenAI
 
 
 class State(TypedDict):
+    llm: str
     words:List[str]
     character_limit:int
     specified_criterias: str
@@ -51,9 +47,8 @@ def title_generator(state):
             description="""You will provide me with a product title that will be used for Amazon within the specified character limits and in accordance with the specified criteria.""",
         )
 
-
-    llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
-
+    #llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
+    llm = state["llm"]
     structured_llm_router = llm.with_structured_output(listing)
 
 
@@ -180,8 +175,8 @@ def title_review(state):
             description="""Have the specifically stated criteria been met?""",
         )
 
-    llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
-
+    #llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
+    llm = state["llm"]
     structured_llm_router = llm.with_structured_output(title_review)
 
     
@@ -282,8 +277,8 @@ def decision_maker(state):
                                                      specified_criterias_rew=specified_criterias_rew, desired_words_rew=desired_words_rew,
                                                      undesired_words_rew=undesired_words_rew)
     
-    llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
-
+    #llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
+    llm = state["llm"]
     structured_llm_router = llm.with_structured_output(decision)
 
 
@@ -379,10 +374,10 @@ def get_prompt(title, old_desc):
 
     return promt
 
-def description_generator(title, desc):
+def description_generator(title, desc, llm):
 
 
-        llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
+        #llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=openai_api_key)
         promt = get_prompt(title, desc)
 
         response = llm.invoke(promt)
@@ -411,6 +406,7 @@ config = {"configurable": {"thread_id": "2"},"recursion_limit": 10}
 from langgraph.errors import GraphRecursionError
 
 class ParentState(TypedDict):
+    llm:str
     words:List[str]
     listing_count:int
     character_limit:int
@@ -448,7 +444,7 @@ def parent_desc_node(state):
 
     else:
         desc  =def_desc
-    fin = description_generator(title, desc)
+    fin = description_generator(title, desc, state["llm"])
     state["desc_list"] = fin
     return {**state}
 
@@ -456,6 +452,7 @@ def control(state):
     if len(state["title_list"]) == state["listing_count"]:
         return "break"
     else:
+        #state["listing_count"] = state["listing_count"] +1
         return "continue"
 
 def dummy(state):
